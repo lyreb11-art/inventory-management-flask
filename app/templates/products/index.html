@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Products - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-box-seam"></i> Products</h1>
+        <a href="{{ url_for('products.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Product
+        </a>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('products.index') }}" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="search" class="form-control" placeholder="Search by name or SKU..." value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="category" class="form-select">
+                        <option value="0">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category.id == category_id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Products Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if products.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Supplier</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products.items %}
+                        <tr {% if product.is_low_stock %}class="table-warning"{% endif %}>
+                            <td>{{ product.sku }}</td>
+                            <td>
+                                <a href="{{ url_for('products.view', id=product.id) }}">{{ product.name }}</a>
+                                {% if product.is_low_stock %}
+                                <span class="badge bg-warning text-dark">Low Stock</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ product.category.name if product.category else '-' }}</td>
+                            <td>{{ product.supplier.name if product.supplier else '-' }}</td>
+                            <td>{{ product.quantity }}</td>
+                            <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                            <td>${{ "%.2f"|format(product.total_value) }}</td>
+                            <td>
+                                <a href="{{ url_for('products.edit', id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('products.delete', id=product.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Are you sure you want to delete this product?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.pages > 1 %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if products.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('products.index', page=products.prev_num, search=search, category=category_id) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == products.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('products.index', page=page_num, search=search, category=category_id) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('products.index', page=products.next_num, search=search, category=category_id) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <p class="text-muted text-center">No products found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
